@@ -54,6 +54,9 @@ spec:
       serviceAccountName: n8n-sandbox-bridge
       containers:
       - name: bridge
+        # Replace with your registry path after `docker build` + `docker push`.
+        # Example: us-central1-docker.pkg.dev/MY_PROJECT/n8n-sandbox/n8n-sandbox-bridge:latest
+        # For KIND: kind load docker-image n8n-sandbox-bridge:local --name n8n-sandbox-demo
         image: n8n-sandbox-bridge:local
         imagePullPolicy: IfNotPresent
         env:

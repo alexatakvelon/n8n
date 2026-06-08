@@ -27,11 +27,10 @@ from k8s_agent_sandbox import SandboxClient
 from k8s_agent_sandbox.models import SandboxInClusterConnectionConfig
 from pydantic import BaseModel
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
-)
-logger = logging.getLogger(__name__)
+# Use the uvicorn logger so our messages appear alongside uvicorn access logs.
+# logging.basicConfig() is overridden by uvicorn's own dictConfig at startup,
+# which silences any root-logger handlers added before the server starts.
+logger = logging.getLogger("uvicorn.error")
 
 app = FastAPI(title="n8n Agent Sandbox Bridge", version="1.0.0")
 
