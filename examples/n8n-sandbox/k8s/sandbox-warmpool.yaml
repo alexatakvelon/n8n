@@ -1,0 +1,11 @@
+# SandboxWarmPool — keeps 2 sandbox pods pre-warmed so claims are satisfied
+# instantly (< 1 s) rather than waiting for a cold pod start (~15-30 s).
+apiVersion: extensions.agents.x-k8s.io/v1alpha1
+kind: SandboxWarmPool
+metadata:
+  name: n8n-sandbox-warmpool
+  namespace: n8n-demo
+spec:
+  replicas: 2
+  sandboxTemplateRef:
+    name: n8n-python-template

@@ -1,0 +1,98 @@
+# ServiceAccount used by the bridge pod.  The bridge calls the Kubernetes API
+# to create/delete SandboxClaims and watch Sandbox status.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: n8n-sandbox-bridge
+  namespace: n8n-demo
+---
+# Namespace-scoped Role: minimum permissions the Python SDK needs.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: n8n-sandbox-bridge
+  namespace: n8n-demo
+rules:
+- apiGroups: ["extensions.agents.x-k8s.io"]
+  resources: ["sandboxclaims"]
+  verbs: ["create", "get", "list", "watch", "delete"]
+- apiGroups: ["agents.x-k8s.io"]
+  resources: ["sandboxes"]
+  verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: n8n-sandbox-bridge
+  namespace: n8n-demo
+subjects:
+- kind: ServiceAccount
+  name: n8n-sandbox-bridge
+  namespace: n8n-demo
+roleRef:
+  kind: Role
+  name: n8n-sandbox-bridge
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: n8n-sandbox-bridge
+  namespace: n8n-demo
+  labels:
+    app: n8n-sandbox-bridge
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: n8n-sandbox-bridge
+  template:
+    metadata:
+      labels:
+        app: n8n-sandbox-bridge
+    spec:
+      serviceAccountName: n8n-sandbox-bridge
+      containers:
+      - name: bridge
+        image: n8n-sandbox-bridge:local
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: WARMPOOL_NAME
+          value: "n8n-sandbox-warmpool"
+        - name: SANDBOX_NAMESPACE
+          value: "n8n-demo"
+        ports:
+        - containerPort: 8000
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 8000
+          initialDelaySeconds: 3
+          periodSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "256Mi"
+---
+# ClusterIP Service — n8n reaches the bridge at:
+#   http://n8n-sandbox-bridge-svc.n8n-demo.svc.cluster.local:8000
+# or, from within the same namespace, simply:
+#   http://n8n-sandbox-bridge-svc:8000
+apiVersion: v1
+kind: Service
+metadata:
+  name: n8n-sandbox-bridge-svc
+  namespace: n8n-demo
+spec:
+  selector:
+    app: n8n-sandbox-bridge
+  ports:
+  - name: http
+    port: 8000
+    targetPort: 8000

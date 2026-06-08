@@ -1,0 +1,69 @@
+# n8n deployment — single replica, SQLite-backed (no external database needed
+# for this demo).  Access the UI via: kubectl port-forward svc/n8n-svc 5678:5678
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: n8n
+  namespace: n8n-demo
+  labels:
+    app: n8n
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: n8n
+  template:
+    metadata:
+      labels:
+        app: n8n
+    spec:
+      containers:
+      - name: n8n
+        image: docker.n8n.io/n8nio/n8n:latest
+        env:
+        - name: N8N_ENCRYPTION_KEY
+          value: "n8n-demo-change-in-production"
+        - name: N8N_PROTOCOL
+          value: "http"
+        - name: N8N_PORT
+          value: "5678"
+        # Disable telemetry for offline/airgapped environments
+        - name: N8N_DIAGNOSTICS_ENABLED
+          value: "false"
+        ports:
+        - containerPort: 5678
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 5678
+          initialDelaySeconds: 15
+          periodSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 5678
+          initialDelaySeconds: 20
+          periodSeconds: 15
+        resources:
+          requests:
+            cpu: "200m"
+            memory: "512Mi"
+        volumeMounts:
+        - name: n8n-data
+          mountPath: /home/node/.n8n
+      volumes:
+      - name: n8n-data
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: n8n-svc
+  namespace: n8n-demo
+spec:
+  selector:
+    app: n8n
+  ports:
+  - name: http
+    port: 5678
+    targetPort: 5678

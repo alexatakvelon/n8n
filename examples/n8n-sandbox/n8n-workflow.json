@@ -1,0 +1,91 @@
+{
+  "name": "Agent Sandbox: Run Python",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "8f3a1c2d-0001-4abc-8001-000000000001",
+      "name": "When clicking 'Test workflow'",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://n8n-sandbox-bridge-svc:8000/execute",
+        "sendBody": true,
+        "contentType": "json",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "command",
+              "value": "python3 -c \"import sys, platform; squares=[i**2 for i in range(1,6)]; print('hostname:', platform.node()); print('python:', sys.version.split()[0]); print('squares:', squares)\""
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "8f3a1c2d-0001-4abc-8001-000000000002",
+      "name": "Run Shell Command",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 180]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://n8n-sandbox-bridge-svc:8000/execute",
+        "sendBody": true,
+        "contentType": "json",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "script",
+              "value": "# Multi-line Python runs inside an isolated sandbox pod\ndef is_prime(n):\n    if n < 2:\n        return False\n    return all(n % i != 0 for i in range(2, int(n**0.5) + 1))\n\nprimes = [x for x in range(2, 50) if is_prime(x)]\nprint(f'Primes below 50: {primes}')\nprint(f'Count: {len(primes)}')\n"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "8f3a1c2d-0001-4abc-8001-000000000003",
+      "name": "Run Python Script",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 420]
+    },
+    {
+      "parameters": {
+        "jsCode": "const cmd = $('Run Shell Command').first().json;\nconst scr = $('Run Python Script').first().json;\n\nreturn [{\n  json: {\n    shell_command: {\n      output: cmd.stdout.trim(),\n      exit_code: cmd.exit_code\n    },\n    python_script: {\n      output: scr.stdout.trim(),\n      exit_code: scr.exit_code\n    }\n  }\n}];"
+      },
+      "id": "8f3a1c2d-0001-4abc-8001-000000000004",
+      "name": "Combine Results",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [700, 300]
+    }
+  ],
+  "connections": {
+    "When clicking 'Test workflow'": {
+      "main": [
+        [
+          {"node": "Run Shell Command",  "type": "main", "index": 0},
+          {"node": "Run Python Script",  "type": "main", "index": 0}
+        ]
+      ]
+    },
+    "Run Shell Command": {
+      "main": [
+        [{"node": "Combine Results", "type": "main", "index": 0}]
+      ]
+    },
+    "Run Python Script": {
+      "main": [
+        [{"node": "Combine Results", "type": "main", "index": 1}]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
