@@ -72,9 +72,10 @@ info "Installing Agent Sandbox ${AGENT_SANDBOX_VERSION}..."
 BASE_URL="https://github.com/kubernetes-sigs/agent-sandbox/releases/download/${AGENT_SANDBOX_VERSION}"
 kubectl apply -f "${BASE_URL}/manifest.yaml"
 kubectl apply -f "${BASE_URL}/extensions.yaml"
+sleep 2
 
-info "Waiting for agent-sandbox-controller-manager to be ready..."
-kubectl rollout status deployment/agent-sandbox-controller-manager \
+info "Waiting for agent-sandbox-controller to be ready..."
+kubectl rollout status deployment/agent-sandbox-controller \
   -n agent-sandbox-system --timeout=120s
 success "Agent Sandbox controller is running."
 
@@ -95,6 +96,7 @@ kubectl apply -f "${SCRIPT_DIR}/k8s/sandbox-warmpool.yaml"
 kubectl apply -f "${SCRIPT_DIR}/k8s/bridge.yaml"
 kubectl apply -f "${SCRIPT_DIR}/k8s/n8n.yaml"
 success "Manifests applied."
+sleep 2
 
 # ─── 6. Wait for pods ─────────────────────────────────────────────────────────
 info "Waiting for bridge deployment to be ready (up to 2 min)..."

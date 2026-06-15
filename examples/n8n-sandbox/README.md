@@ -197,6 +197,7 @@ Open `http://localhost:5678`.
 
 ```bash
 gcloud container clusters delete n8n-sandbox-demo --zone us-central1-a
+gcloud artifacts repositories delete n8n-sandbox --location=${REGION}
 ```
 
 ---
